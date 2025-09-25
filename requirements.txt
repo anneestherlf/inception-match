@@ -1,0 +1,8 @@
+crewai
+crewai-tools
+python-dotenv
+gspread
+google-auth-oauthlib
+pandas
+streamlit
+google-generativeai
