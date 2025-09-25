@@ -6,3 +6,6 @@ google-auth-oauthlib
 pandas
 streamlit
 google-generativeai
+plotly
+numpy
+openpyxl

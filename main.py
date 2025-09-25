@@ -65,6 +65,27 @@ def spreadsheet_tool(startup_data_json: str) -> str:
         # VERIFICAÇÃO 3: Dados mínimos obrigatórios
         if not startup_name or startup_name == 'Não encontrado':
             return f"REJEITADO: Nome da startup é obrigatório"
+        
+        # VERIFICAÇÃO 4: Idade da startup (máximo 10 anos)
+        founding_year_str = data.get('Ano de Fundação', '')
+        if founding_year_str and founding_year_str != 'Não encontrado':
+            try:
+                # Extrair apenas o ano numérico (caso tenha texto adicional)
+                import re
+                year_match = re.search(r'\b(19|20)\d{2}\b', str(founding_year_str))
+                if year_match:
+                    founding_year = int(year_match.group())
+                    current_year = datetime.now().year
+                    startup_age = current_year - founding_year
+                    
+                    if startup_age > 10:
+                        return f"REJEITADO: '{startup_name}' tem {startup_age} anos (fundada em {founding_year}). Limite máximo: 10 anos."
+                else:
+                    # Se não conseguiu extrair um ano válido, continua sem rejeitar
+                    pass
+            except (ValueError, TypeError):
+                # Se houve erro na conversão, continua sem rejeitar
+                pass
             
         # Preparar dados para salvar
         row_data = [
