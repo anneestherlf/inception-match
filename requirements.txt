@@ -5,7 +5,7 @@ gspread
 google-auth-oauthlib
 pandas
 streamlit
-google-generativeai
 plotly
+google-generativeai
+langchain-google-genai
 numpy
-openpyxl

@@ -2,26 +2,15 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-# Importações padrão
+# Importações padrão e de bibliotecas
 import os
 import json
 import gspread
 from datetime import datetime
 
-# Importações do CrewAI (usando a estrutura de importação que funcionou para você)
-from crewai import Agent, Task, Crew, Process
-from crewai.tools import tool
-
-# Importações das ferramentas prontas
+# Importações do CrewAI e ferramentas
+from crewai import Agent, Task, Crew, Process, tool
 from crewai_tools import SerperDevTool, WebsiteSearchTool
-
-# --- PAÍSES DA AMÉRICA LATINA (LISTA OFICIAL) ---
-LATIN_AMERICA_COUNTRIES = [
-    'Argentina', 'Bolívia', 'Brasil', 'Chile', 'Colômbia', 'Costa Rica', 
-    'Cuba', 'Equador', 'El Salvador', 'Guatemala', 'Haiti', 'Honduras', 
-    'México', 'Nicarágua', 'Panamá', 'Paraguai', 'Peru', 
-    'República Dominicana', 'Uruguai', 'Venezuela'
-]
 
 # --- CONFIGURAÇÃO DAS FERRAMENTAS ---
 search_tool = SerperDevTool()
@@ -39,343 +28,129 @@ except Exception as e:
 
 # --- FERRAMENTA PERSONALIZADA PARA O GOOGLE SHEETS ---
 @tool("Spreadsheet Update Tool")
-def spreadsheet_tool(startup_data_json: str) -> str:
+def spreadsheet_tool(data_json: str) -> str:
     """
-    Salva dados de startups DA AMÉRICA LATINA na planilha, verificando duplicatas e país.
-    O input DEVE ser uma string JSON válida.
+    Recebe um JSON com os dados completos de uma startup e o utiliza para adicionar ou
+    atualizar uma linha na planilha do Google Sheets.
     """
     try:
-        data = json.loads(startup_data_json)
-        startup_name = data.get('Nome da Startup', '')
-        country = data.get('País', '')
-        
-        # VERIFICAÇÃO 1: País deve ser da América Latina
-        if country not in LATIN_AMERICA_COUNTRIES:
-            return f"REJEITADO: '{startup_name}' não é da América Latina (país: {country}). Apenas países válidos: {', '.join(LATIN_AMERICA_COUNTRIES)}"
-        
-        # VERIFICAÇÃO 2: Verificar se a startup já existe (evitar duplicatas)
-        try:
-            existing_cell = worksheet.find(startup_name)
-            if existing_cell:
-                return f"DUPLICATA EVITADA: '{startup_name}' já existe na planilha (linha {existing_cell.row}). Não foi adicionada novamente."
-        except:
-            # Se não encontrou, significa que não é duplicata
-            pass
-        
-        # VERIFICAÇÃO 3: Dados mínimos obrigatórios
-        if not startup_name or startup_name == 'Não encontrado':
-            return f"REJEITADO: Nome da startup é obrigatório"
-        
-        # VERIFICAÇÃO 4: Idade da startup (máximo 10 anos)
-        founding_year_str = data.get('Ano de Fundação', '')
-        if founding_year_str and founding_year_str != 'Não encontrado':
-            try:
-                # Extrair apenas o ano numérico (caso tenha texto adicional)
-                import re
-                year_match = re.search(r'\b(19|20)\d{2}\b', str(founding_year_str))
-                if year_match:
-                    founding_year = int(year_match.group())
-                    current_year = datetime.now().year
-                    startup_age = current_year - founding_year
-                    
-                    if startup_age > 10:
-                        return f"REJEITADO: '{startup_name}' tem {startup_age} anos (fundada em {founding_year}). Limite máximo: 10 anos."
-                else:
-                    # Se não conseguiu extrair um ano válido, continua sem rejeitar
-                    pass
-            except (ValueError, TypeError):
-                # Se houve erro na conversão, continua sem rejeitar
-                pass
-            
-        # Preparar dados para salvar
+        data = json.loads(data_json)
+        cell = worksheet.find(data.get('Nome da Startup', ''))
         row_data = [
-            startup_name,
-            data.get('Site', 'Não encontrado'),
-            data.get('Setor de Atuação', 'Não encontrado'),
-            country,
-            data.get('Ano de Fundação', 'Não encontrado'),
-            data.get('Tecnologias de IA Utilizadas', 'Não encontrado'),
-            data.get('Nome do Investidor (VC)', 'Não encontrado'),
-            data.get('Valor da Última Rodada', 'Não encontrado'),
-            data.get('Nome do Líder Técnico', 'Não encontrado'),
-            data.get('Linkedin do Líder Técnico', 'Não encontrado'),
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            data.get('Nome da Startup', 'Não encontrado'), data.get('Site', 'Não encontrado'),
+            data.get('Setor de Atuação', 'Não encontrado'), data.get('País', 'Não encontrado'),
+            data.get('Legalmente Instituída', 'Não encontrado'), data.get('Ano de Fundação', 'Não encontrado'),
+            data.get('Tecnologias Utilizadas', 'Não encontrado'), data.get('Nome do Investidor (VC)', 'Não encontrado'),
+            data.get('Valor da Última Rodada', 'Não encontrado'), data.get('Status do Financiamento', 'Não encontrado'),
+            data.get('Liderança Técnica (Nome)', 'Não encontrado'), data.get('Liderança Técnica (LinkedIn)', 'Não encontrado'),
+            data.get('Integrantes do Time', 'Não encontrado'), data.get('Tamanho da Startup', 'Não encontrado'),
+            data.get('Base de Clientes', 'Não encontrado'), data.get('TAM', 'Não encontrado'),
+            data.get('SAM', 'Não encontrado'), data.get('SOM', 'Não encontrado'),
+            data.get('Dinâmica do Setor', 'Não encontrado'), data.get('Principais Concorrentes', 'Não encontrado'),
+            data.get('Previsões de Mercado', 'Não encontrado'), data.get('Análise de Riscos Ambientais', 'Não encontrado'),
+            data.get('CAC', 'Não encontrado'), data.get('Churn Rate', 'Não encontrado'),
+            data.get('Fontes da Análise de Mercado', 'Não encontrado'), datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ]
-        
-        # Salvar na planilha
-        worksheet.append_row(row_data)
-        return f"✅ SUCESSO: Startup '{startup_name}' da {country} adicionada à planilha!"
-            
-    except json.JSONDecodeError:
-        return f"ERRO: JSON inválido fornecido para a ferramenta de planilha"
+        if cell:
+            worksheet.update(f'A{cell.row}', [row_data])
+            return f"Dados da startup '{data['Nome da Startup']}' atualizados com sucesso."
+        else:
+            worksheet.append_row(row_data)
+            return f"Nova startup '{data['Nome da Startup']}' adicionada com sucesso."
     except Exception as e:
-        return f"ERRO ao salvar na planilha: {str(e)}"
+        return f"Ocorreu um erro ao interagir com a planilha: {str(e)}"
 
-# --- DEFINIÇÃO DOS AGENTES ---
+# --- EQUIPE DE AGENTES ESPECIALISTAS ---
+prospector_agent = Agent(role='Prospector de Startups de IA', goal='Gerar uma lista massiva de nomes de startups de IA', backstory='Especialista em prospecção digital, encontra o máximo de nomes de startups possível.', verbose=True, allow_delegation=False, tools=[search_tool, website_tool])
+qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo apenas startups de tecnologia da América Latina.', backstory='Analista rápido e preciso, verifica a localização e o setor de cada empresa.', verbose=True, allow_delegation=False, tools=[search_tool])
+data_analyst_agent = Agent(role='Analista de Dados de Startups', goal='Coletar informações detalhadas sobre uma única startup.', backstory='Pesquisador persistente que mergulha fundo para encontrar dados essenciais.', verbose=True, allow_delegation=True, tools=[search_tool])
+market_strategist_agent = Agent(role='Estrategista de Mercado de Tecnologia', goal='Realizar uma análise de mercado aprofundada para uma startup.', backstory='Especialista em interpretar dados para avaliar o potencial de mercado, sempre citando fontes.', verbose=True, allow_delegation=True, tools=[search_tool])
+database_manager_agent = Agent(role='Gerente de Banco de Dados', goal='Garantir a integridade da base de dados no Google Sheets.', backstory='Guardião da nossa fonte da verdade, prevenindo duplicatas e garantindo dados precisos.', verbose=True, allow_delegation=False, tools=[spreadsheet_tool])
 
-vc_scout = Agent(
-    role='Venture Capital Portfolio Scraper',
-    goal='Extrair nomes de startups de IA diretamente de páginas de portfólio de VCs.',
-    backstory='Você é um robô focado em visitar páginas de portfólio de fundos de investimento e extrair os nomes das empresas listadas.',
-    verbose=True,
-    allow_delegation=False,
-    tools=[website_tool]
-)
+# --- LISTAS DE FONTES PARA PROSPECÇÃO ---
+lista_vcs = ["Sequoia Capital", "Andreessen Horowitz", "SoftBank", "Kaszek", "Valor Capital Group", "Tiger Global", "Canary", "Bossa Invest", "Monashees", "Latitud"]
+lista_plataformas = ["crunchbase.com", "pitchbook.com", "latamlist.com", "slinghub.com.br", "distrito.me"]
+lista_paises_latam = ["Brasil", "México", "Argentina", "Colômbia", "Chile", "Peru"]
 
-database_researcher = Agent(
-    role='Latin America AI Startup Researcher',
-    goal='Encontrar o máximo possível de startups de IA da América Latina usando buscas direcionadas e verificando a origem geográfica.',
-    backstory='Você é um especialista em startups latino-americanas. Conhece bem os países da região e sempre verifica se uma startup é realmente da América Latina antes de incluí-la nos resultados. Usa termos em português, espanhol e inglês nas buscas.',
-    verbose=True,
-    allow_delegation=False,
-    tools=[search_tool]
-)
-
-startup_analyst = Agent(
-    role='Startup Analyst',
-    goal='Pesquisar ativamente e extrair o máximo de informações sobre uma startup da América Latina, usando múltiplas buscas e diferentes termos quando necessário.',
-    backstory='Você é um pesquisador experiente que nunca desiste. Usa diferentes estratégias de busca: nome da startup + "sobre", "about", "website", "funding", "series", "investment". Sempre tenta pelo menos 3-4 buscas diferentes antes de desistir.',
-    verbose=True,
-    tools=[search_tool]
-)
-
-people_investigator = Agent(
-    role='Tech Leadership Investigator',
-    goal='Encontrar informações sobre líderes técnicos de startups usando várias estratégias de busca.',
-    backstory='Você é um investigador de pessoas expert que usa múltiplas abordagens: busca por "CTO", "Head of Engineering", "Tech Lead", "Founder", "CEO", além do LinkedIn da empresa, equipe, sobre nós, etc.',
-    verbose=True,
-    tools=[search_tool]
-)
-
-data_organizer = Agent(
-    role='Data Organizer',
-    goal='Consolidar todas as informações coletadas em um JSON estruturado e salvá-lo na planilha.',
-    backstory='Você é um organizador de dados que recebe informações dos outros agentes e as consolida em um formato JSON. Você sempre verifica se recebeu dados antes de marcar algo como "Não encontrado".',
-    verbose=True,
-    tools=[spreadsheet_tool]
-)
-
-# --- DEFINIÇÃO DAS TAREFAS ---
-
-# Listas de fontes para a busca
-portfolio_websites = [
-    "www.sequoiacap.com/companies", 
-    "www.monashees.com/portfolio", 
-    "www.perception.com/portfolio"
-]
-
-database_platforms = [
-    "pitchbook.com",
-    "crunchbase.com",
-    "cbinsights.com",
-    "slinghub.com.br",
-    "distrito.me",
-    "ligaventures.com.br"
-]
-
-# Tarefa 1: Busca em Portfólios (mais focada)
-prospect_from_portfolios_task = Task(
-    description=f"Acesse cada um destes sites: {', '.join(portfolio_websites)}. Para cada site, leia os nomes das empresas e identifique até 2 que pareçam ser do setor de Inteligência Artificial.",
-    expected_output='Uma string com uma lista de nomes de startups, separados por vírgula. Ex: "NotCo, Cortex"',
-    agent=vc_scout
-)
-
-# Tarefa 2: Busca Focada APENAS na América Latina
-prospect_from_databases_task = Task(
+# --- TAREFAS ---
+task_prospect = Task(
     description=(
-        f"MISSÃO: Encontrar startups de IA EXCLUSIVAMENTE dos países da América Latina.\n\n"
-        f"**PAÍSES VÁLIDOS (OBRIGATÓRIO VERIFICAR):**\n"
-        f"{', '.join(LATIN_AMERICA_COUNTRIES)}\n\n"
-        f"**BUSCAS OBRIGATÓRIAS A EXECUTAR:**\n"
-        f"1. 'startup inteligência artificial brasil site:crunchbase.com'\n"
-        f"2. 'AI startup Mexico artificial intelligence site:crunchbase.com'\n"
-        f"3. 'startup IA Argentina Colombia Chile site:crunchbase.com'\n"
-        f"4. 'machine learning startups Peru Uruguai site:pitchbook.com'\n"
-        f"5. 'artificial intelligence startup Costa Rica Panama site:cbinsights.com'\n"
-        f"6. 'AI startups Latin America Brasil México site:slinghub.com.br'\n"
-        f"7. 'startup artificial intelligence Venezuela Ecuador site:distrito.me'\n"
-        f"8. 'inteligencia artificial startup Guatemala Honduras site:ligaventures.com.br'\n\n"
-        f"**REGRAS CRÍTICAS:**\n"
-        f"- Para CADA startup encontrada, VERIFIQUE se o país é da lista acima\n"
-        f"- Se a startup não for da América Latina, NÃO inclua na lista\n"
-        f"- Use termos em português, espanhol e inglês\n"
-        f"- Procure variações: 'IA', 'AI', 'artificial intelligence', 'inteligência artificial', 'machine learning'\n\n"
-        f"**PLATAFORMAS PARA BUSCAR:**\n"
-        f"- {', '.join(database_platforms)}"
+        "Sua missão é gerar a maior lista possível de nomes de startups. Combine as fontes abaixo em múltiplas buscas no Google.\n"
+        f"**VCs para pesquisar (busque por 'nome do VC portfolio'):** {', '.join(lista_vcs)}\n"
+        f"**Plataformas para pesquisar (use 'site:'):** {', '.join(lista_plataformas)}\n"
+        f"**Países para focar:** {', '.join(lista_paises_latam)}\n"
+        "**ESTRATÉGIA:** Não busque por 'IA', apenas liste os nomes das empresas nos portfólios. A qualificação virá depois. Execute pelo menos 15 buscas diferentes."
     ),
-    expected_output='Lista de nomes de startups CONFIRMADAMENTE da América Latina, separados por vírgula.',
-    agent=database_researcher
+    expected_output="Uma única string contendo uma longa lista de nomes de startups, separados por vírgula.",
+    agent=prospector_agent
 )
 
-# --- CRIAÇÃO E EXECUÇÃO DO PROCESSO ---
+task_qualify = Task(
+    description="Para cada nome na lista de entrada, faça uma busca rápida e determine se a empresa atende a DOIS critérios: 1. É uma empresa de TECNOLOGIA. 2. Está sediada na AMÉRICA LATINA.",
+    expected_output="Uma string contendo uma lista filtrada apenas com os nomes das startups qualificadas, separados por vírgula.",
+    agent=qualifier_agent
+)
 
-if __name__ == "__main__":
-    print("Iniciando o processo de busca massiva de startups...")
+task_analyze_data_template = Task(description='Para a startup "{startup_name}", encontre: site, setor, país, status legal, ano de fundação, tecnologias, VCs, funding, e o nome e LinkedIn da liderança técnica.', expected_output='Um relatório em texto com os dados fundamentais da startup "{startup_name}".', agent=data_analyst_agent)
+task_analyze_market_template = Task(description='Para a startup "{startup_name}", realize uma análise de mercado: TAM, SAM, SOM, concorrentes, dinâmica do setor, previsões, e riscos. CRÍTICO: Liste todas as URLs das fontes.', expected_output='Um relatório de análise de mercado para "{startup_name}", incluindo as fontes.', agent=market_strategist_agent)
+task_manage_database_template = Task(description='Consolide os relatórios de dados e mercado da startup "{startup_name}" em um único JSON e use a ferramenta "Spreadsheet Update Tool" para salvá-lo.', expected_output='Mensagem de confirmação de que a startup "{startup_name}" foi salva ou atualizada.', agent=database_manager_agent)
 
-    # ETAPA 1: PROSPECÇÃO
+# --- FLUXO DE TRABALHO PRINCIPAL ---
+if __name__ == '__main__':
+    print("Iniciando fluxo de trabalho completo...")
+
+    # ETAPA 1: Prospecção e Qualificação
     prospecting_crew = Crew(
-        agents=[vc_scout, database_researcher],
-        tasks=[prospect_from_portfolios_task, prospect_from_databases_task],
-        process=Process.sequential
+        agents=[prospector_agent, qualifier_agent],
+        tasks=[task_prospect, task_qualify],
+        process=Process.sequential,
+        verbose=True
     )
+    print("Executando Crew de Prospecção...")
+    prospecting_result = prospecting_crew.kickoff()
     
-    print("Buscando nomes de startups em portfólios e bases de dados...")
-    prospecting_results = prospecting_crew.kickoff()
-
-    # Consolida os resultados, corrigindo o acesso ao output
-    found_names = set()
-    # O resultado agora é um objeto CrewOutput, pegamos o output de cada tarefa
-    if prospecting_results and prospecting_results.tasks_output:
-        for task_output in prospecting_results.tasks_output:
-            # Acessamos o texto bruto do resultado da tarefa
-            names_string = task_output.raw
-            names = names_string.split(',')
-            for name in names:
-                clean_name = name.strip()
-                if clean_name:
-                    found_names.add(clean_name)
-    
-    startup_names = list(found_names)
+    # **CORREÇÃO APLICADA AQUI**
+    # Acessa o resultado da ÚLTIMA tarefa (qualificação), que contém a lista final
+    qualified_names_str = prospecting_result.tasks_output[-1].raw if (prospecting_result and prospecting_result.tasks_output) else ""
+    startup_names_to_analyze = [name.strip() for name in qualified_names_str.split(',') if name.strip()]
     
     print("\n--------------------------------------------------")
-    print(f"Total de {len(startup_names)} startups únicas encontradas para análise: {startup_names}")
+    print(f"Total de {len(startup_names_to_analyze)} startups qualificadas encontradas: {startup_names_to_analyze}")
     print("--------------------------------------------------\n")
 
-    # ETAPA 2: ANÁLISE INDIVIDUAL
-    if startup_names:
-        for name in startup_names:
-            print(f"\n>>> Analisando startup: {name}")
-            
-            # Tarefa de análise da startup com instruções MUITO detalhadas
-            startup_task = Task(
-                description=f'''
-ANÁLISE RIGOROSA da startup "{name}" - APENAS AMÉRICA LATINA:
-
-**PAÍSES VÁLIDOS DA AMÉRICA LATINA:**
-{', '.join(LATIN_AMERICA_COUNTRIES)}
-
-**BUSCAS OBRIGATÓRIAS:**
-1. "{name} startup empresa"
-2. "{name} site oficial about company"
-3. "{name} sede headquarters location país"
-4. "{name} crunchbase pitchbook funding"
-5. "{name} artificial intelligence IA machine learning"
-
-**VERIFICAÇÃO CRÍTICA DO PAÍS:**
-- PROCURE ESPECIFICAMENTE por: "sediada em", "baseada em", "headquarters", "based in", "located in"
-- CONFIRME se o país está na lista da América Latina
-- Se a startup for de QUALQUER país fora da América Latina, reporte: "REJEITAR - País fora da América Latina"
-
-**INFORMAÇÕES A EXTRAIR:**
-- Site oficial (URL própria)
-- Setor (fintech, healthtech, edtech, etc.)  
-- País sede (DEVE estar na lista acima)
-- Ano de fundação
-- Tecnologias de IA específicas
-- Investidores/VCs
-- Valor de investimento
-
-**FORMATO OBRIGATÓRIO:**
-Se país válido:
-Site: [URL]
-Setor: [setor]
-País: [país da América Latina]
-Fundação: [ano]
-IA: [tecnologias]
-Investidor: [VC]
-Rodada: [valor]
-
-Se país inválido:
-REJEITAR - País fora da América Latina: [nome do país encontrado]
-                ''',
-                expected_output=f'Relatório completo com informações específicas da startup {name} no formato solicitado',
-                agent=startup_analyst
-            )
-            
-            # Tarefa de liderança com estratégias múltiplas
-            leadership_task = Task(
-                description=f'''
-ENCONTRAR LIDERANÇA TÉCNICA da startup "{name}":
-
-BUSCAS OBRIGATÓRIAS:
-1. "{name} CTO chief technology officer"
-2. "{name} founder co-founder technical"
-3. "{name} team equipe leadership"
-4. "{name} about us sobre nós"
-5. "{name} linkedin company"
-
-PROCURAR POR:
-- CTO, VP Engineering, Head of Tech
-- Co-founder técnico
-- CEO com background técnico
-- Engineering Director/Manager
-
-ESTRATÉGIAS:
-- Verificar site oficial da empresa (seção Team/About)
-- LinkedIn da empresa
-- Notícias sobre a startup
-- Perfis dos fundadores
-
-FORMATO OBRIGATÓRIO:
-Nome: [nome completo da pessoa]
-Cargo: [posição técnica]
-LinkedIn: [URL do perfil]
-                ''',
-                expected_output=f'Informações do líder técnico da startup {name} no formato especificado',
-                agent=people_investigator
-            )
-
-            # Tarefa de consolidação melhorada
-            consolidation_task = Task(
-                description=f'''
-VERIFICAR E CONSOLIDAR dados da startup "{name}":
-
-**PAÍSES VÁLIDOS DA AMÉRICA LATINA:**
-{', '.join(LATIN_AMERICA_COUNTRIES)}
-
-**VERIFICAÇÃO OBRIGATÓRIA:**
-1. LEIA o relatório do startup_analyst
-2. Se contém "REJEITAR - País fora da América Latina", NÃO SALVE e reporte: "Startup {name} rejeitada - não é da América Latina"
-3. Se o país relatado NÃO está na lista acima, NÃO SALVE e reporte: "Startup {name} rejeitada - país inválido"
-
-**SE A STARTUP FOR VÁLIDA (da América Latina):**
-4. EXTRAIA as informações dos relatórios
-5. MONTE o JSON exatamente assim:
-
-{{
-  "Nome da Startup": "{name}",
-  "Site": "[do relatório: Site: ...]",
-  "Setor de Atuação": "[do relatório: Setor: ...]", 
-  "País": "[do relatório: País: ... - DEVE ser da América Latina]",
-  "Ano de Fundação": "[do relatório: Fundação: ...]",
-  "Tecnologias de IA Utilizadas": "[do relatório: IA: ...]",
-  "Nome do Investidor (VC)": "[do relatório: Investidor: ...]",
-  "Valor da Última Rodada": "[do relatório: Rodada: ...]",
-  "Nome do Líder Técnico": "[do relatório: Nome: ...]",
-  "Linkedin do Líder Técnico": "[do relatório: LinkedIn: ...]"
-}}
-
-6. USE A FERRAMENTA spreadsheet_tool para salvar
-7. A ferramenta já verifica duplicatas automaticamente
-                ''',
-                expected_output=f'Confirmação de salvamento na planilha para {name}',
-                agent=data_organizer,
-                context=[startup_task, leadership_task]
-            )
-            
-            # Cria um Crew de análise SÓ para esta startup
-            analysis_crew = Crew(
-                agents=[startup_analyst, people_investigator, data_organizer],
-                tasks=[startup_task, leadership_task, consolidation_task],
-                process=Process.sequential
-            )
-
-            startup_result = analysis_crew.kickoff()
-            print(f"Resultado para {name}: {startup_result.raw if startup_result else 'Sem resultado.'}")
+    # ETAPA 2: Análise Profunda em Loop
+    if startup_names_to_analyze:
+        existing_startups = set(worksheet.col_values(1))
         
-        print("\n\n########################")
-        print("## Processo finalizado!")
-        print("## Todas as startups foram analisadas e salvas na planilha.")
-        print("########################")
-    else:
-        print("Nenhuma startup foi encontrada para analisar.")
+        for name in startup_names_to_analyze:
+            if name in existing_startups:
+                print(f"Startup '{name}' já existe na base. Pulando.")
+                continue
+
+            print(f"\n>>> Iniciando análise profunda para: {name} <<<")
+            
+            # Cria tarefas dinâmicas
+            task_analyze_data = task_analyze_data_template
+            task_analyze_data.description = task_analyze_data.description.format(startup_name=name)
+            
+            task_analyze_market = task_analyze_market_template
+            task_analyze_market.description = task_analyze_market.description.format(startup_name=name)
+
+            task_manage_database = task_manage_database_template
+            task_manage_database.description = task_manage_database.description.format(startup_name=name)
+            task_manage_database.context = [task_analyze_data, task_analyze_market]
+
+            # Cria Crew de Análise para esta startup
+            analysis_crew = Crew(
+                agents=[data_analyst_agent, market_strategist_agent, database_manager_agent],
+                tasks=[task_analyze_data, task_analyze_market, task_manage_database],
+                process=Process.sequential,
+                verbose=True
+            )
+            
+            analysis_result = analysis_crew.kickoff()
+            print(f"Resultado da análise para '{name}': {analysis_result.raw if analysis_result else 'Sem resultado.'}")
+            
+    print("\n\n########################")
+    print("## Processo finalizado!")
+    print("########################")
