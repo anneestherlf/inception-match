@@ -9,3 +9,4 @@ plotly
 google-generativeai
 langchain-google-genai
 numpy
+flask

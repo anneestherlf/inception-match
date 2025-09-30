@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inception-match</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="{{ url_for('static', filename='images/nvidia-logo.png') }}" alt="NVIDIA Logo" class="logo-img">
+                </div>
+                <span class="logo-text">Inception-match</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="datetime">
+                <span id="current-datetime">25 de Setembro, 2024 16:12</span>
+            </div>
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge"></span>
+            </div>
+            <div class="user-profile">
+                <img src="https://via.placeholder.com/40x40/333/fff?text=MJ" alt="Michael J." class="user-avatar">
+                <span class="user-name">Michael J.</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Cards Row -->
+        <div class="cards-row">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Total Startups Card -->
+                <div class="card total-startups-card">
+                    <h3 class="card-title">Total de Startups Coletadas (América Latina)</h3>
+                    
+                    <div class="number-and-buttons">
+                        <div class="card-number" id="total-startups">200</div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button class="action-btn">
+                                <span class="btn-text">Acessar GitHub</span>
+                                <i class="fab fa-github"></i>
+                            </button>
+                            <button class="action-btn">
+                                <span class="btn-text">Acessar Base de Dados</span>
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn">
+                                <span class="btn-text">Chat Insights</span>
+                                <i class="fas fa-comments"></i>
+                            </button>
+                            <div class="toggle-container">
+                                <span class="toggle-text">Filtro Inception</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-subtitle" id="last-update">Última atualização há 30 min</div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <!-- Top Sectors Card -->
+                <div class="card sectors-card">
+                    <h3 class="card-title">Principais Setores</h3>
+                    <div class="list-container" id="top-sectors">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Top Countries Card -->
+                <div class="card countries-card">
+                    <h3 class="card-title">Principais Países</h3>
+                    <div class="list-container" id="top-countries">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Startups</th>
+                        <th>Investidor</th>
+                        <th>Status de financiamento</th>
+                        <th>País</th>
+                        <th>TAM</th>
+                        <th>Setor</th>
+                    </tr>
+                </thead>
+                <tbody id="startups-table-body">
+                    <!-- Will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-left">
+            <span>© 2025 Todos os direitos reservados.</span>
+        </div>
+        <div class="footer-right">
+            <a href="#" class="privacy-link">Política de Privacidade</a>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
