@@ -1,53 +1,44 @@
-# Nome do seu fluxo de trabalho, aparecerá na aba "Actions" do seu GitHub
 name: Coleta Horária de Dados de Startups
 
-# A "regra" que dispara a execução
 on:
   schedule:
-    # A sintaxe 'cron' para rodar a cada hora, no minuto 0.
-    # (minuto hora dia-do-mês mês dia-da-semana)
     - cron: '0 * * * *'
-  # A linha abaixo permite que você rode manualmente pela interface do GitHub também.
   workflow_dispatch:
 
-# Os "trabalhos" (jobs) que serão executados
 jobs:
-  # Nome do nosso job
   run-data-collection:
-    # O tipo de máquina virtual que o GitHub vai usar. Ubuntu é o padrão.
     runs-on: ubuntu-latest
-
-    # Os passos que a máquina virtual vai seguir
+    
     steps:
-      # 1. Baixar o seu código do repositório para a máquina virtual
-      - name: Baixar o código
+      # 1. Baixa o seu código para a máquina virtual
+      - name: Baixar o código do repositório
         uses: actions/checkout@v4
 
-      # 2. Configurar o ambiente Python
+      # 2. Configura o ambiente Python
       - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.11'
 
-      # 3. Instalar todas as bibliotecas listadas no seu requirements.txt
-      - name: Instalar dependências
+      # 3. Instala as dependências a partir do seu arquivo requirements.txt
+      - name: Instalar bibliotecas
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 4. Executar o seu script principal (main.py)
-      #    A seção 'env' injeta seus segredos como variáveis de ambiente,
-      #    exatamente como o load_dotenv() espera.
-      - name: Executar o script de coleta de dados
+      # 4. PASSO CRÍTICO: Cria o arquivo credentials.json a partir do Secret
+      - name: Criar arquivo credentials.json
+        run: echo "${{ secrets.GDRIVE_API_CREDENTIALS_JSON }}" > credentials.json
+        shell: bash
+
+      # 5. PASSO DE DIAGNÓSTICO: Lista os arquivos para verificar se o passo anterior funcionou
+      - name: Verificar se o credentials.json foi criado
+        run: ls -l
+
+      # 6. Executa o seu script principal
+      - name: Executar script de coleta (main.py)
         run: python main.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # O segredo do Google precisa de uma etapa extra (Passo 3)
-          GDRIVE_API_CREDENTIALS_JSON: ${{ secrets.GDRIVE_API_CREDENTIALS_JSON }}
-
-      # 5. Criar o arquivo credentials.json a partir do segredo
-      #    Isso é necessário porque o gspread precisa ler um arquivo físico.
-      - name: Criar o arquivo credentials.json
-        run: echo "${{ secrets.GDRIVE_API_CREDENTIALS_JSON }}" > credentials.json
