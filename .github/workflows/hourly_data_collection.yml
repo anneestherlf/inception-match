@@ -10,32 +10,42 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. Baixa o seu código para a máquina virtual
       - name: Baixar o código do repositório
         uses: actions/checkout@v4
 
-      # 2. Configura o ambiente Python
       - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. Instala as dependências a partir do seu arquivo requirements.txt
       - name: Instalar bibliotecas
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 4. PASSO CRÍTICO: Cria o arquivo credentials.json a partir do Secret
-      - name: Criar arquivo credentials.json
-        run: echo "${{ secrets.GDRIVE_API_CREDENTIALS_JSON }}" > credentials.json
-        shell: bash
+      # --------------------------------------------------------------------
+      # A MUDANÇA CRÍTICA ESTÁ AQUI
+      # --------------------------------------------------------------------
+      # Em vez de 'echo', usamos Python para criar o arquivo de forma segura.
+      - name: Criar credentials.json a partir do segredo (Método Seguro)
+        # Este comando Python lê a variável de ambiente (onde o segredo está)
+        # e a escreve em um arquivo, preservando a formatação exata.
+        run: |
+          import os
+          creds_json = os.getenv('GDRIVE_API_CREDENTIALS_JSON')
+          with open('credentials.json', 'w') as f:
+            f.write(creds_json)
+        # Usamos 'python -c' para executar um comando Python diretamente.
+        shell: python
+        env:
+          # Passamos o segredo para a variável de ambiente que o script Python vai ler.
+          GDRIVE_API_CREDENTIALS_JSON: ${{ secrets.GDRIVE_API_CREDENTIALS_JSON }}
 
-      # 5. PASSO DE DIAGNÓSTICO: Lista os arquivos para verificar se o passo anterior funcionou
+      # Passo de verificação para garantir que o arquivo foi criado
       - name: Verificar se o credentials.json foi criado
         run: ls -l
 
-      # 6. Executa o seu script principal
+      # O resto do workflow continua o mesmo
       - name: Executar script de coleta (main.py)
         run: python main.py
         env:
