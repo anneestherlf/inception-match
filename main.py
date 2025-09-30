@@ -43,7 +43,7 @@ def spreadsheet_tool(data_json: str) -> str:
     """Atualiza ou insere uma linha da startup. Exige pelo menos 'Nome da Startup'."""
     REQUIRED_ORDER = [
         'Nome da Startup','Site','Setor de Atuação','País','Legalmente Instituída','Ano de Fundação',
-        'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status do Financiamento',
+        'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status de financiamento',
         'Liderança Técnica (Nome)','Liderança Técnica (LinkedIn)','Integrantes do Time','Tamanho da Startup',
         'Base de Clientes','TAM','SAM','SOM','Dinâmica do Setor','Principais Concorrentes',
         'Previsões de Mercado','Análise de Riscos Ambientais','CAC','Churn Rate','Fontes da Análise de Mercado'
@@ -67,7 +67,7 @@ def spreadsheet_tool(data_json: str) -> str:
 
 # --- EQUIPE DE AGENTES ESPECIALISTAS ---
 prospector_agent = Agent(role='Prospector de Startups de IA', goal='Gerar uma lista massiva de nomes de startups de IA', backstory='Especialista em prospecção digital, encontra o máximo de nomes de startups possível.', verbose=True, allow_delegation=False, tools=[search_tool, website_tool])
-qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo apenas startups de tecnologia da América Latina (as startups não podem ser do Estados Unidos ou EUA; nenhuma startup pode ter o setor "Venture Capital", "VC" ou "Venture Builder").', backstory='Analista rápido e preciso, verifica a localização e o setor de cada empresa.', verbose=True, allow_delegation=False, tools=[search_tool])
+qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo EXCLUSIVAMENTE startups de tecnologia da América Latina. REJEITAR TOTALMENTE qualquer startup dos Estados Unidos, EUA, USA, US ou United States. REJEITAR empresas dos setores: Venture Capital, VC, Venture Builder, Investment, Investor, Fund, Capital, Private Equity. ACEITAR APENAS startups de tecnologia/produto da América Latina.', backstory='Analista extremamente rigoroso que verifica meticulosamente a localização geográfica e o setor de cada empresa, rejeitando qualquer startup fora da América Latina ou que seja empresa de investimento.', verbose=True, allow_delegation=False, tools=[search_tool])
 data_analyst_agent = Agent(role='Analista de Dados de Startups', goal='Coletar informações detalhadas sobre uma única startup.', backstory='Pesquisador persistente que mergulha fundo para encontrar dados essenciais.', verbose=True, allow_delegation=True, tools=[search_tool])
 market_strategist_agent = Agent(role='Estrategista de Mercado de Tecnologia', goal='Realizar uma análise de mercado aprofundada para uma startup.', backstory='Especialista em interpretar dados para avaliar o potencial de mercado, sempre citando fontes.', verbose=True, allow_delegation=True, tools=[search_tool])
 # Removido database_manager_agent porque o decorator @tool desta versão não converte a função em BaseTool automaticamente.
@@ -75,7 +75,16 @@ market_strategist_agent = Agent(role='Estrategista de Mercado de Tecnologia', go
 # --- LISTAS DE FONTES PARA PROSPECÇÃO ---
 lista_vcs = ["Sequoia Capital", "Andreessen Horowitz", "SoftBank", "Kaszek", "Valor Capital Group", "Tiger Global", "Canary", "Bossa Invest", "Monashees", "Latitud", "New Enterprise Associates", "Accel", "Lightspeed Venture Partners", "Bessemer Venture Partners", "Canary", "Igah Ventures", "Bossanova Investimentos"]
 lista_plataformas = ["crunchbase.com", "pitchbook.com", "latamlist.com", "slinghub.com.br", "distrito.me"]
-lista_paises_latam = ["Brasil", "México", "Argentina", "Colômbia", "Chile", "Peru", "Bolívia", "Equador", "Guiana", "Paraguai", "Suriname", "Uruguai", "Venezuela", "Belize", "Costa Rica", "El Salvador", "Guatemala", "Honduras", "Nicarágua", "Panamá", "Cuba", "Haiti", "República Dominicana"]
+lista_paises_latam = ["Brasil", "Brazil", "México", "Mexico", "Argentina", "Colômbia", "Colombia", "Chile", "Peru", "Perú", "Bolívia", "Bolivia", "Equador", "Ecuador", "Guiana", "Guyana", "Paraguai", "Paraguay", "Suriname", "Uruguai", "Uruguay", "Venezuela", "Belize", "Costa Rica", "El Salvador", "Guatemala", "Honduras", "Nicarágua", "Nicaragua", "Panamá", "Panama", "Cuba", "Haiti", "República Dominicana", "Dominican Republic"]
+
+# Lista de setores rejeitados (empresas de investimento, não startups)
+setores_rejeitados_global = [
+    'venture capital', 'vc', 'venture builder', 'investment', 'investor', 'fund', 'capital', 
+    'private equity', 'asset management', 'investment management', 'investment fund',
+    'venture fund', 'growth capital', 'seed fund', 'accelerator fund', 'incubator fund',
+    'investment company', 'investment firm', 'capital management', 'wealth management',
+    'investment banking', 'merchant banking', 'development finance', 'investment vehicle'
+]
 
 # --- CONFIG PROSPECÇÃO DINÂMICA ---
 MAX_PROSPECTION_ATTEMPTS = 8
@@ -105,17 +114,24 @@ def build_prospect_task(existing_names: set, attempt: int):
 def build_qualify_task(raw_names: str):
     return Task(
         description=(
-            "Para cada nome recebido, verifique rapidamente SE: (1) é empresa de tecnologia OU base digital clara; (2) sede na América Latina. "
-            "Responda APENAS com os nomes aprovados separados por vírgula, sem texto adicional. Lista de entrada: " + raw_names[:6000]
+            "INSTRUÇÕES CRÍTICAS DE FILTRAGEM:\n"
+            "1. REJEITAR TOTALMENTE qualquer startup dos Estados Unidos, EUA, USA, US, United States ou Silicon Valley\n"
+            "2. ACEITAR APENAS startups com sede confirmada nos países da América Latina: Brasil, México, Argentina, Colômbia, Chile, Peru, Bolívia, Equador, Guiana, Paraguai, Suriname, Uruguai, Venezuela, Belize, Costa Rica, El Salvador, Guatemala, Honduras, Nicarágua, Panamá, Cuba, Haiti, República Dominicana\n"
+            "3. VERIFICAR se é empresa de tecnologia/produto (não empresa de investimento)\n"
+            "4. REJEITAR TOTALMENTE setores de investimento: Venture Capital, VC, Venture Builder, Investment, Investor, Fund, Capital, Private Equity, Asset Management, Financial Services (se for fundo)\n"
+            "5. ACEITAR APENAS startups que desenvolvem produtos ou serviços tecnológicos\n\n"
+            "Para cada nome da lista, pesquise e verifique rigorosamente a localização da sede e o setor de atuação. "
+            "Responda APENAS com os nomes que atendem TODOS os critérios, separados por vírgula, sem texto adicional.\n\n"
+            "Lista para verificar: " + raw_names[:6000]
         ),
-        expected_output="Nomes aprovados separados por vírgula.",
+        expected_output="Nomes de startups de tecnologia da América Latina aprovados, separados por vírgula.",
         agent=qualifier_agent
     )
 
 JSON_SCHEMA_GUIDE = (
     "Responda APENAS em JSON puro (sem texto antes/depois) com as chaves exatas: "
     "['Nome da Startup','Site','Setor de Atuação','País','Legalmente Instituída','Ano de Fundação',"
-    "'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status do Financiamento',"
+    "'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status de financiamento',"
     "'Liderança Técnica (Nome)','Liderança Técnica (LinkedIn)','Integrantes do Time','Tamanho da Startup',"
     "'Base de Clientes'] . Use string vazia se não encontrar."
 )
@@ -127,8 +143,8 @@ MARKET_SCHEMA_GUIDE = (
 
 def build_data_task(startup_name: str):
     return Task(
-        description=(f"Para a startup '{startup_name}', encontre os dados fundamentais. {JSON_SCHEMA_GUIDE}"),
-        expected_output=f"JSON válido com dados fundamentais da startup '{startup_name}'",
+        description=(f"Para a startup '{startup_name}', encontre os dados fundamentais. IMPORTANTE: Verifique se a startup está realmente localizada na América Latina. Se descobrir que está nos EUA ou fora da América Latina, inclua essa informação no campo 'País'. {JSON_SCHEMA_GUIDE}"),
+        expected_output=f"JSON válido com dados fundamentais da startup '{startup_name}', incluindo verificação de localização",
         agent=data_analyst_agent
     )
 
@@ -167,6 +183,25 @@ def merge_and_write(startup_name: str, outputs: list):
         for k,v in block.items():
             if v not in (None, '', 'Não encontrado'):
                 merged[k] = v
+    
+    # VALIDAÇÃO FINAL: Rejeitar startups dos EUA
+    pais = merged.get('País', '').lower()
+    if any(termo in pais for termo in ['estados unidos', 'eua', 'usa', 'us', 'united states', 'silicon valley']):
+        print(f"[MERGE] {startup_name}: REJEITADA - Startup dos EUA detectada: {merged.get('País', 'N/A')}")
+        return f"Startup '{startup_name}' rejeitada - localizada nos EUA."
+    
+    # Validar se está na América Latina
+    paises_latam_lower = [p.lower() for p in lista_paises_latam]
+    if pais and not any(pais_latam in pais for pais_latam in paises_latam_lower):
+        print(f"[MERGE] {startup_name}: REJEITADA - País fora da América Latina: {merged.get('País', 'N/A')}")
+        return f"Startup '{startup_name}' rejeitada - não está na América Latina."
+    
+    # VALIDAÇÃO FINAL: Rejeitar setores de investimento
+    setor = merged.get('Setor de Atuação', '').lower()
+    if any(termo in setor for termo in setores_rejeitados_global):
+        print(f"[MERGE] {startup_name}: REJEITADA - Setor de investimento detectado: {merged.get('Setor de Atuação', 'N/A')}")
+        return f"Startup '{startup_name}' rejeitada - setor de investimento: {merged.get('Setor de Atuação', 'N/A')}."
+    
     # Normaliza fontes: pode vir lista
     fontes = merged.get('Fontes da Análise de Mercado')
     if isinstance(fontes, list):
@@ -175,6 +210,45 @@ def merge_and_write(startup_name: str, outputs: list):
     result = spreadsheet_tool(json.dumps(merged))
     print(f"[MERGE] {startup_name}: {result} | Keys: {list(merged.keys())}")
     return result
+
+def clean_invalid_startups():
+    """Remove startups dos EUA e do setor Venture Capital da planilha."""
+    print("🧹 Iniciando limpeza de startups inválidas...")
+    
+    try:
+        # Busca todos os registros da planilha
+        all_records = worksheet.get_all_records()
+        rows_to_delete = []
+        
+        paises_rejeitados = ['estados unidos', 'eua', 'usa', 'us', 'united states', 'silicon valley']
+        
+        for i, record in enumerate(all_records, start=2):  # start=2 porque linha 1 é cabeçalho
+            startup_name = record.get('Nome da Startup', '').strip()
+            pais = record.get('País', '').lower().strip()
+            setor = record.get('Setor de Atuação', '').lower().strip()
+            
+            # Verifica se é dos EUA
+            is_usa = any(termo in pais for termo in paises_rejeitados)
+            
+            # Verifica se é do setor venture capital
+            is_vc = any(termo in setor for termo in setores_rejeitados_global)
+            
+            if is_usa or is_vc:
+                reason = "EUA" if is_usa else "Venture Capital"
+                print(f"❌ Marcando para remoção: {startup_name} - Motivo: {reason} (País: {pais}, Setor: {setor})")
+                rows_to_delete.append(i)
+        
+        # Remove as linhas (de trás para frente para não alterar os índices)
+        if rows_to_delete:
+            print(f"🗑️  Removendo {len(rows_to_delete)} startups inválidas...")
+            for row_index in sorted(rows_to_delete, reverse=True):
+                worksheet.delete_rows(row_index)
+            print(f"✅ Limpeza concluída! {len(rows_to_delete)} startups removidas.")
+        else:
+            print("✅ Nenhuma startup inválida encontrada na planilha.")
+            
+    except Exception as e:
+        print(f"❌ Erro durante a limpeza: {e}")
 
 def safe_kickoff(crew: Crew, label: str, retries: int = 2):
     """Executa crew.kickoff com retentativas se não houver outputs válidos."""
@@ -199,8 +273,13 @@ def safe_kickoff(crew: Crew, label: str, retries: int = 2):
 # --- FLUXO DE TRABALHO PRINCIPAL ---
 if __name__ == '__main__':
     print("Iniciando fluxo de trabalho completo...")
+    
+    # ETAPA 1: Limpeza de dados inválidos
+    clean_invalid_startups()
+    
+    # Atualiza a lista após limpeza
     existing_startups = set(worksheet.col_values(1))
-    print(f"Startups já existentes na planilha: {len(existing_startups)}")
+    print(f"Startups na planilha após limpeza: {len(existing_startups)}")
 
     all_new_qualified = []
     attempted_names = set()

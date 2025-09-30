@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inception-match</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,15 +26,6 @@
         <div class="header-right">
             <div class="datetime">
                 <span id="current-datetime">25 de Setembro, 2024 16:12</span>
-            </div>
-            <div class="notification-icon">
-                <i class="fas fa-bell"></i>
-                <span class="notification-badge"></span>
-            </div>
-            <div class="user-profile">
-                <img src="https://via.placeholder.com/40x40/333/fff?text=MJ" alt="Michael J." class="user-avatar">
-                <span class="user-name">Michael J.</span>
-                <i class="fas fa-chevron-down"></i>
             </div>
         </div>
     </header>

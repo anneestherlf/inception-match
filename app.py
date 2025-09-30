@@ -33,7 +33,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'CaizCoin',
                 'Nome do Investidor (VC)': 'Monashees',
-                'Status do Financiamento': 'Seed',
+                'Status de financiamento': 'Seed',
                 'País': 'Brasil',
                 'TAM': '521.30',
                 'Setor de Atuação': 'Edtech'
@@ -41,7 +41,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'CaizStable',
                 'Nome do Investidor (VC)': 'Antler',
-                'Status do Financiamento': 'Pré-seed',
+                'Status de financiamento': 'Pré-seed',
                 'País': 'México',
                 'TAM': '201.12',
                 'Setor de Atuação': 'Fintech'
@@ -49,7 +49,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'CaizGold',
                 'Nome do Investidor (VC)': 'VC',
-                'Status do Financiamento': 'Seed',
+                'Status de financiamento': 'Seed',
                 'País': 'México',
                 'TAM': '680.22',
                 'Setor de Atuação': 'Fintech'
@@ -57,7 +57,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'BitCoin',
                 'Nome do Investidor (VC)': 'VC',
-                'Status do Financiamento': 'Seed',
+                'Status de financiamento': 'Seed',
                 'País': 'México',
                 'TAM': '730.44',
                 'Setor de Atuação': 'Fintech'
@@ -65,7 +65,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'Ethereum',
                 'Nome do Investidor (VC)': 'VC',
-                'Status do Financiamento': 'Seed',
+                'Status de financiamento': 'Seed',
                 'País': 'México',
                 'TAM': '2,843.18',
                 'Setor de Atuação': 'Fintech'
@@ -73,7 +73,7 @@ def get_startups_data():
             {
                 'Nome da Startup': 'BitCoin Cash',
                 'Nome do Investidor (VC)': 'VC',
-                'Status do Financiamento': 'Seed',
+                'Status de financiamento': 'Seed',
                 'País': 'México',
                 'TAM': '730.44',
                 'Setor de Atuação': 'Fintech'
@@ -130,6 +130,11 @@ def get_statistics():
         'top_countries': top_countries
     }
 
+@app.route('/favicon.ico')
+def favicon():
+    """Serve o favicon"""
+    return app.send_static_file('images/favicon.png')
+
 @app.route('/')
 def dashboard():
     """Página principal do dashboard"""
@@ -146,7 +151,7 @@ def api_startups():
         formatted_startup = {
             'nome': startup.get('Nome da Startup', 'N/A'),
             'investidor': startup.get('Nome do Investidor (VC)', 'N/A'),
-            'status': startup.get('Status do Financiamento', 'N/A'),
+            'status': startup.get('Status do financiamento', 'N/A'),
             'pais': startup.get('País', 'N/A'),
             'tam': startup.get('TAM', 'N/A'),
             'setor': startup.get('Setor de Atuação', 'N/A')
@@ -154,6 +159,20 @@ def api_startups():
         formatted_startups.append(formatted_startup)
     
     return jsonify(formatted_startups)
+
+@app.route('/api/debug')
+def api_debug():
+    """API de debug para verificar dados brutos"""
+    startups = get_startups_data()
+    if startups:
+        first = startups[0]
+        return jsonify({
+            'total': len(startups),
+            'first_startup_raw': first,
+            'status_field_exists': 'Status de financiamento' in first,
+            'status_value': first.get('Status de financiamento', 'CAMPO_NAO_ENCONTRADO')
+        })
+    return jsonify({'error': 'No data'})
 
 @app.route('/api/statistics')
 def api_statistics():

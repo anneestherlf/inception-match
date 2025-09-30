@@ -27,13 +27,13 @@ function updateDateTime() {
 
 async function loadDashboardData() {
     try {
-        // Carregar estatísticas
-        const statsResponse = await fetch('/api/statistics');
+        // Carregar estatísticas (com cache-busting)
+        const statsResponse = await fetch(`/api/statistics?t=${Date.now()}`);
         const stats = await statsResponse.json();
         updateStatistics(stats);
 
-        // Carregar dados das startups
-        const startupsResponse = await fetch('/api/startups');
+        // Carregar dados das startups (com cache-busting)
+        const startupsResponse = await fetch(`/api/startups?t=${Date.now()}`);
         const startups = await startupsResponse.json();
         updateStartupsTable(startups);
 
@@ -101,14 +101,13 @@ function setupEventListeners() {
     // Botão GitHub
     const githubBtn = document.querySelector('.action-btn:nth-child(1)');
     githubBtn.addEventListener('click', () => {
-        window.open('https://github.com', '_blank');
+        window.open('https://github.com/anneestherlf/inception-agents', '_blank');
     });
 
     // Botão Base de Dados
     const databaseBtn = document.querySelector('.action-btn:nth-child(2)');
     databaseBtn.addEventListener('click', () => {
-        // Aqui você pode implementar a funcionalidade de download da base
-        alert('Funcionalidade de download da base de dados será implementada');
+        window.open('https://docs.google.com/spreadsheets/d/1vTNdvg3JAxKxu7td8HnuVDwdiIcBnYN0YPrfQc6m5gg/edit?usp=sharing', '_blank');
     });
 
     // Botão Chat Insights
