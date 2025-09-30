@@ -53,7 +53,7 @@ def spreadsheet_tool(data_json: str) -> str:
         if not data.get('Nome da Startup'):
             return "Erro: campo 'Nome da Startup' ausente no JSON enviado ao spreadsheet_tool." 
         # Normaliza valores
-        normalized = {k: ('' if v in (None, 'N/A', 'n/a', 'NA') else str(v).strip()) for k,v in data.items()}
+        normalized = {k: (v if v not in (None, 'N/A', 'n/a', 'NA') else 'Não disponível') for k, v in data.items()}
         cell = worksheet.find(normalized['Nome da Startup'])
         row_data = [normalized.get(k, '') or 'Não encontrado' for k in REQUIRED_ORDER]
         row_data.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -67,7 +67,7 @@ def spreadsheet_tool(data_json: str) -> str:
 
 # --- EQUIPE DE AGENTES ESPECIALISTAS ---
 prospector_agent = Agent(role='Prospector de Startups de IA', goal='Gerar uma lista massiva de nomes de startups de IA', backstory='Especialista em prospecção digital, encontra o máximo de nomes de startups possível.', verbose=True, allow_delegation=False, tools=[search_tool, website_tool])
-qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo apenas startups de tecnologia da América Latina.', backstory='Analista rápido e preciso, verifica a localização e o setor de cada empresa.', verbose=True, allow_delegation=False, tools=[search_tool])
+qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo apenas startups de tecnologia da América Latina (as startups não podem ser do Estados Unidos ou EUA; nenhuma startup pode ter o setor "Venture Capital", "VC" ou "Venture Builder").', backstory='Analista rápido e preciso, verifica a localização e o setor de cada empresa.', verbose=True, allow_delegation=False, tools=[search_tool])
 data_analyst_agent = Agent(role='Analista de Dados de Startups', goal='Coletar informações detalhadas sobre uma única startup.', backstory='Pesquisador persistente que mergulha fundo para encontrar dados essenciais.', verbose=True, allow_delegation=True, tools=[search_tool])
 market_strategist_agent = Agent(role='Estrategista de Mercado de Tecnologia', goal='Realizar uma análise de mercado aprofundada para uma startup.', backstory='Especialista em interpretar dados para avaliar o potencial de mercado, sempre citando fontes.', verbose=True, allow_delegation=True, tools=[search_tool])
 # Removido database_manager_agent porque o decorator @tool desta versão não converte a função em BaseTool automaticamente.

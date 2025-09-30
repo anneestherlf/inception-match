@@ -9,19 +9,26 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configuração do Google Sheets
+print("Tentando conectar ao Google Sheets...")
 try:
     gc = gspread.service_account(filename='credentials.json')
     spreadsheet = gc.open("Base de Startups NVIDIA")
     worksheet = spreadsheet.sheet1
     print("Conexão com a planilha bem-sucedida.")
+except FileNotFoundError:
+    print("Erro: O arquivo 'credentials.json' não foi encontrado. Certifique-se de que ele está no diretório correto.")
+    worksheet = None
+except gspread.exceptions.APIError as api_error:
+    print(f"Erro na API do Google Sheets: {api_error}")
+    worksheet = None
 except Exception as e:
-    print(f"Erro ao conectar com a planilha: {e}")
+    print(f"Erro inesperado ao conectar com a planilha: {e}")
     worksheet = None
 
 def get_startups_data():
     """Busca todos os dados das startups da planilha"""
     if not worksheet:
-        # Dados de exemplo para demonstração
+        print("⚠️  Conexão com o Google Sheets não estabelecida. Usando dados de exemplo.")
         return [
             {
                 'Nome da Startup': 'CaizCoin',
@@ -72,13 +79,14 @@ def get_startups_data():
                 'Setor de Atuação': 'Fintech'
             }
         ]
-    
+
     try:
-        # Busca todos os dados da planilha
+        print("🔄 Lendo dados reais da planilha...")
         all_records = worksheet.get_all_records()
+        print(f"✅ {len(all_records)} registros carregados da planilha.")
         return all_records
     except Exception as e:
-        print(f"Erro ao buscar dados: {e}")
+        print(f"❌ Erro ao ler dados da planilha: {e}")
         return []
 
 def get_statistics():

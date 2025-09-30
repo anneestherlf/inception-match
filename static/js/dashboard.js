@@ -86,12 +86,12 @@ function updateStartupsTable(startups) {
     startups.forEach(startup => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><strong>${startup.nome}</strong></td>
-            <td>${startup.investidor}</td>
-            <td>${startup.status}</td>
-            <td>${startup.pais}</td>
-            <td>€ ${startup.tam}</td>
-            <td>${startup.setor}</td>
+            <td><strong>${startup.nome || 'Não informado'}</strong></td>
+            <td>${startup.investidor || 'Não informado'}</td>
+            <td>${startup.status || 'Não disponível'}</td>
+            <td>${startup.pais || 'Não informado'}</td>
+            <td>€ ${startup.tam || '0.00'}</td>
+            <td>${startup.setor || 'Não informado'}</td>
         `;
         tbody.appendChild(row);
     });
