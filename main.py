@@ -5,11 +5,22 @@ load_dotenv()
 # Importações padrão e de bibliotecas
 import os
 import json
+import re
 import gspread
 from datetime import datetime
 
 # Importações do CrewAI e ferramentas
-from crewai import Agent, Task, Crew, Process, tool
+from crewai import Agent, Task, Crew, Process
+
+# Compatibilidade: algumas versões do crewai não expõem 'tool'.
+try:
+    from crewai import tool  # type: ignore
+except ImportError:  # Fallback simples para não quebrar execução
+    def tool(name: str):
+        def decorator(fn):
+            fn.tool_name = name
+            return fn
+        return decorator
 from crewai_tools import SerperDevTool, WebsiteSearchTool
 
 # --- CONFIGURAÇÃO DAS FERRAMENTAS ---
@@ -29,34 +40,28 @@ except Exception as e:
 # --- FERRAMENTA PERSONALIZADA PARA O GOOGLE SHEETS ---
 @tool("Spreadsheet Update Tool")
 def spreadsheet_tool(data_json: str) -> str:
-    """
-    Recebe um JSON com os dados completos de uma startup e o utiliza para adicionar ou
-    atualizar uma linha na planilha do Google Sheets.
-    """
+    """Atualiza ou insere uma linha da startup. Exige pelo menos 'Nome da Startup'."""
+    REQUIRED_ORDER = [
+        'Nome da Startup','Site','Setor de Atuação','País','Legalmente Instituída','Ano de Fundação',
+        'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status do Financiamento',
+        'Liderança Técnica (Nome)','Liderança Técnica (LinkedIn)','Integrantes do Time','Tamanho da Startup',
+        'Base de Clientes','TAM','SAM','SOM','Dinâmica do Setor','Principais Concorrentes',
+        'Previsões de Mercado','Análise de Riscos Ambientais','CAC','Churn Rate','Fontes da Análise de Mercado'
+    ]
     try:
         data = json.loads(data_json)
-        cell = worksheet.find(data.get('Nome da Startup', ''))
-        row_data = [
-            data.get('Nome da Startup', 'Não encontrado'), data.get('Site', 'Não encontrado'),
-            data.get('Setor de Atuação', 'Não encontrado'), data.get('País', 'Não encontrado'),
-            data.get('Legalmente Instituída', 'Não encontrado'), data.get('Ano de Fundação', 'Não encontrado'),
-            data.get('Tecnologias Utilizadas', 'Não encontrado'), data.get('Nome do Investidor (VC)', 'Não encontrado'),
-            data.get('Valor da Última Rodada', 'Não encontrado'), data.get('Status do Financiamento', 'Não encontrado'),
-            data.get('Liderança Técnica (Nome)', 'Não encontrado'), data.get('Liderança Técnica (LinkedIn)', 'Não encontrado'),
-            data.get('Integrantes do Time', 'Não encontrado'), data.get('Tamanho da Startup', 'Não encontrado'),
-            data.get('Base de Clientes', 'Não encontrado'), data.get('TAM', 'Não encontrado'),
-            data.get('SAM', 'Não encontrado'), data.get('SOM', 'Não encontrado'),
-            data.get('Dinâmica do Setor', 'Não encontrado'), data.get('Principais Concorrentes', 'Não encontrado'),
-            data.get('Previsões de Mercado', 'Não encontrado'), data.get('Análise de Riscos Ambientais', 'Não encontrado'),
-            data.get('CAC', 'Não encontrado'), data.get('Churn Rate', 'Não encontrado'),
-            data.get('Fontes da Análise de Mercado', 'Não encontrado'), datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ]
+        if not data.get('Nome da Startup'):
+            return "Erro: campo 'Nome da Startup' ausente no JSON enviado ao spreadsheet_tool." 
+        # Normaliza valores
+        normalized = {k: ('' if v in (None, 'N/A', 'n/a', 'NA') else str(v).strip()) for k,v in data.items()}
+        cell = worksheet.find(normalized['Nome da Startup'])
+        row_data = [normalized.get(k, '') or 'Não encontrado' for k in REQUIRED_ORDER]
+        row_data.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         if cell:
             worksheet.update(f'A{cell.row}', [row_data])
-            return f"Dados da startup '{data['Nome da Startup']}' atualizados com sucesso."
-        else:
-            worksheet.append_row(row_data)
-            return f"Nova startup '{data['Nome da Startup']}' adicionada com sucesso."
+            return f"Dados da startup '{normalized['Nome da Startup']}' atualizados com sucesso."
+        worksheet.append_row(row_data)
+        return f"Nova startup '{normalized['Nome da Startup']}' adicionada com sucesso."
     except Exception as e:
         return f"Ocorreu um erro ao interagir com a planilha: {str(e)}"
 
@@ -65,92 +70,204 @@ prospector_agent = Agent(role='Prospector de Startups de IA', goal='Gerar uma li
 qualifier_agent = Agent(role='Qualificador de Leads de Startups', goal='Filtrar uma lista, mantendo apenas startups de tecnologia da América Latina.', backstory='Analista rápido e preciso, verifica a localização e o setor de cada empresa.', verbose=True, allow_delegation=False, tools=[search_tool])
 data_analyst_agent = Agent(role='Analista de Dados de Startups', goal='Coletar informações detalhadas sobre uma única startup.', backstory='Pesquisador persistente que mergulha fundo para encontrar dados essenciais.', verbose=True, allow_delegation=True, tools=[search_tool])
 market_strategist_agent = Agent(role='Estrategista de Mercado de Tecnologia', goal='Realizar uma análise de mercado aprofundada para uma startup.', backstory='Especialista em interpretar dados para avaliar o potencial de mercado, sempre citando fontes.', verbose=True, allow_delegation=True, tools=[search_tool])
-database_manager_agent = Agent(role='Gerente de Banco de Dados', goal='Garantir a integridade da base de dados no Google Sheets.', backstory='Guardião da nossa fonte da verdade, prevenindo duplicatas e garantindo dados precisos.', verbose=True, allow_delegation=False, tools=[spreadsheet_tool])
+# Removido database_manager_agent porque o decorator @tool desta versão não converte a função em BaseTool automaticamente.
 
 # --- LISTAS DE FONTES PARA PROSPECÇÃO ---
-lista_vcs = ["Sequoia Capital", "Andreessen Horowitz", "SoftBank", "Kaszek", "Valor Capital Group", "Tiger Global", "Canary", "Bossa Invest", "Monashees", "Latitud"]
+lista_vcs = ["Sequoia Capital", "Andreessen Horowitz", "SoftBank", "Kaszek", "Valor Capital Group", "Tiger Global", "Canary", "Bossa Invest", "Monashees", "Latitud", "New Enterprise Associates", "Accel", "Lightspeed Venture Partners", "Bessemer Venture Partners", "Canary", "Igah Ventures", "Bossanova Investimentos"]
 lista_plataformas = ["crunchbase.com", "pitchbook.com", "latamlist.com", "slinghub.com.br", "distrito.me"]
-lista_paises_latam = ["Brasil", "México", "Argentina", "Colômbia", "Chile", "Peru"]
+lista_paises_latam = ["Brasil", "México", "Argentina", "Colômbia", "Chile", "Peru", "Bolívia", "Equador", "Guiana", "Paraguai", "Suriname", "Uruguai", "Venezuela", "Belize", "Costa Rica", "El Salvador", "Guatemala", "Honduras", "Nicarágua", "Panamá", "Cuba", "Haiti", "República Dominicana"]
 
-# --- TAREFAS ---
-task_prospect = Task(
-    description=(
-        "Sua missão é gerar a maior lista possível de nomes de startups. Combine as fontes abaixo em múltiplas buscas no Google.\n"
-        f"**VCs para pesquisar (busque por 'nome do VC portfolio'):** {', '.join(lista_vcs)}\n"
-        f"**Plataformas para pesquisar (use 'site:'):** {', '.join(lista_plataformas)}\n"
-        f"**Países para focar:** {', '.join(lista_paises_latam)}\n"
-        "**ESTRATÉGIA:** Não busque por 'IA', apenas liste os nomes das empresas nos portfólios. A qualificação virá depois. Execute pelo menos 15 buscas diferentes."
-    ),
-    expected_output="Uma única string contendo uma longa lista de nomes de startups, separados por vírgula.",
-    agent=prospector_agent
+# --- CONFIG PROSPECÇÃO DINÂMICA ---
+MAX_PROSPECTION_ATTEMPTS = 8
+MIN_NEW_STARTUPS_REQUIRED = 3  # parar cedo se já conseguimos pelo menos isso de novos nomes
+
+def build_prospect_task(existing_names: set, attempt: int):
+    avoid_clause = ''
+    if existing_names:
+        # Limita a lista a 50 primeiros para não poluir prompt
+        sample = list(existing_names)[:50]
+        avoid_clause = ("Evite listar novamente estas startups já conhecidas (NÃO repita nenhuma delas; busque outras): "
+                        + ", ".join(sample) + ".")
+    return Task(
+        description=(
+            f"[TENTATIVA {attempt}] Sua missão é gerar a maior lista possível de NOMES NOVOS de startups de tecnologia (não repetir as já conhecidas). "
+            "Combine as fontes abaixo em múltiplas buscas no Google. "
+            f"Use portfólios de VCs: {', '.join(lista_vcs)}. "
+            f"Use sites especializados com 'site:': {', '.join(lista_plataformas)}. "
+            f"Foque em países: {', '.join(lista_paises_latam)}. "
+            "NÃO adicione explicações, apenas nomes separados por vírgula. "
+            "Varie buscas (mínimo 10). " + avoid_clause
+        ),
+        expected_output="Uma única string contendo apenas nomes de startups separados por vírgula.",
+        agent=prospector_agent
+    )
+
+def build_qualify_task(raw_names: str):
+    return Task(
+        description=(
+            "Para cada nome recebido, verifique rapidamente SE: (1) é empresa de tecnologia OU base digital clara; (2) sede na América Latina. "
+            "Responda APENAS com os nomes aprovados separados por vírgula, sem texto adicional. Lista de entrada: " + raw_names[:6000]
+        ),
+        expected_output="Nomes aprovados separados por vírgula.",
+        agent=qualifier_agent
+    )
+
+JSON_SCHEMA_GUIDE = (
+    "Responda APENAS em JSON puro (sem texto antes/depois) com as chaves exatas: "
+    "['Nome da Startup','Site','Setor de Atuação','País','Legalmente Instituída','Ano de Fundação',"
+    "'Tecnologias Utilizadas','Nome do Investidor (VC)','Valor da Última Rodada','Status do Financiamento',"
+    "'Liderança Técnica (Nome)','Liderança Técnica (LinkedIn)','Integrantes do Time','Tamanho da Startup',"
+    "'Base de Clientes'] . Use string vazia se não encontrar."
+)
+MARKET_SCHEMA_GUIDE = (
+    "Responda APENAS em JSON puro com as chaves: ['Nome da Startup','TAM','SAM','SOM','Dinâmica do Setor',"
+    "'Principais Concorrentes','Previsões de Mercado','Análise de Riscos Ambientais','CAC','Churn Rate',"
+    "'Fontes da Análise de Mercado'] . 'Fontes da Análise de Mercado' deve ser uma lista de URLs ou uma string com URLs separadas por ponto e vírgula."
 )
 
-task_qualify = Task(
-    description="Para cada nome na lista de entrada, faça uma busca rápida e determine se a empresa atende a DOIS critérios: 1. É uma empresa de TECNOLOGIA. 2. Está sediada na AMÉRICA LATINA.",
-    expected_output="Uma string contendo uma lista filtrada apenas com os nomes das startups qualificadas, separados por vírgula.",
-    agent=qualifier_agent
-)
+def build_data_task(startup_name: str):
+    return Task(
+        description=(f"Para a startup '{startup_name}', encontre os dados fundamentais. {JSON_SCHEMA_GUIDE}"),
+        expected_output=f"JSON válido com dados fundamentais da startup '{startup_name}'",
+        agent=data_analyst_agent
+    )
 
-task_analyze_data_template = Task(description='Para a startup "{startup_name}", encontre: site, setor, país, status legal, ano de fundação, tecnologias, VCs, funding, e o nome e LinkedIn da liderança técnica.', expected_output='Um relatório em texto com os dados fundamentais da startup "{startup_name}".', agent=data_analyst_agent)
-task_analyze_market_template = Task(description='Para a startup "{startup_name}", realize uma análise de mercado: TAM, SAM, SOM, concorrentes, dinâmica do setor, previsões, e riscos. CRÍTICO: Liste todas as URLs das fontes.', expected_output='Um relatório de análise de mercado para "{startup_name}", incluindo as fontes.', agent=market_strategist_agent)
-task_manage_database_template = Task(description='Consolide os relatórios de dados e mercado da startup "{startup_name}" em um único JSON e use a ferramenta "Spreadsheet Update Tool" para salvá-lo.', expected_output='Mensagem de confirmação de que a startup "{startup_name}" foi salva ou atualizada.', agent=database_manager_agent)
+def build_market_task(startup_name: str):
+    return Task(
+        description=(f"Para a startup '{startup_name}', faça análise de mercado. {MARKET_SCHEMA_GUIDE}"),
+        expected_output=f"JSON válido com análise de mercado da startup '{startup_name}'",
+        agent=market_strategist_agent
+    )
+
+def merge_and_write(startup_name: str, outputs: list):
+    """Tenta extrair JSON de cada saída, mesclar e enviar à planilha. Retorna mensagem."""
+    merged = {'Nome da Startup': startup_name}
+    json_blocks = []
+    for raw in outputs:
+        if not raw:
+            continue
+        candidate = None
+        # Primeiro tentativa direta
+        try:
+            if isinstance(raw, str):
+                candidate = json.loads(raw)
+        except Exception:
+            candidate = None
+        if candidate is None:
+            # Procura primeiro bloco JSON com regex
+            try:
+                match = re.search(r'\{.*\}', raw, re.DOTALL)
+                if match:
+                    candidate = json.loads(match.group(0))
+            except Exception:
+                candidate = None
+        if isinstance(candidate, dict):
+            json_blocks.append(candidate)
+    for block in json_blocks:
+        for k,v in block.items():
+            if v not in (None, '', 'Não encontrado'):
+                merged[k] = v
+    # Normaliza fontes: pode vir lista
+    fontes = merged.get('Fontes da Análise de Mercado')
+    if isinstance(fontes, list):
+        merged['Fontes da Análise de Mercado'] = '; '.join(str(x) for x in fontes)
+    # Envia para sheet
+    result = spreadsheet_tool(json.dumps(merged))
+    print(f"[MERGE] {startup_name}: {result} | Keys: {list(merged.keys())}")
+    return result
+
+def safe_kickoff(crew: Crew, label: str, retries: int = 2):
+    """Executa crew.kickoff com retentativas se não houver outputs válidos."""
+    for attempt in range(1, retries+2):  # primeira + retries
+        try:
+            result = crew.kickoff()
+            if result and getattr(result, 'tasks_output', None):
+                # Verifica se algum task_output tem raw não vazio
+                raws = [getattr(t, 'raw', '') for t in result.tasks_output]
+                if any(r.strip() for r in raws):
+                    return result
+            if result and getattr(result, 'raw', None) and result.raw.strip():
+                return result
+            print(f"[safe_kickoff] '{label}' tentativa {attempt} sem outputs válidos.")
+        except Exception as e:
+            print(f"[safe_kickoff] Erro em '{label}' tentativa {attempt}: {e}")
+        if attempt <= retries:
+            print(f"[safe_kickoff] Retentando '{label}'...")
+    print(f"[safe_kickoff] Falha definitiva em '{label}' após {retries+1} tentativas.")
+    return None
 
 # --- FLUXO DE TRABALHO PRINCIPAL ---
 if __name__ == '__main__':
     print("Iniciando fluxo de trabalho completo...")
+    existing_startups = set(worksheet.col_values(1))
+    print(f"Startups já existentes na planilha: {len(existing_startups)}")
 
-    # ETAPA 1: Prospecção e Qualificação
-    prospecting_crew = Crew(
-        agents=[prospector_agent, qualifier_agent],
-        tasks=[task_prospect, task_qualify],
-        process=Process.sequential,
-        verbose=True
-    )
-    print("Executando Crew de Prospecção...")
-    prospecting_result = prospecting_crew.kickoff()
-    
-    # **CORREÇÃO APLICADA AQUI**
-    # Acessa o resultado da ÚLTIMA tarefa (qualificação), que contém a lista final
-    qualified_names_str = prospecting_result.tasks_output[-1].raw if (prospecting_result and prospecting_result.tasks_output) else ""
-    startup_names_to_analyze = [name.strip() for name in qualified_names_str.split(',') if name.strip()]
-    
-    print("\n--------------------------------------------------")
-    print(f"Total de {len(startup_names_to_analyze)} startups qualificadas encontradas: {startup_names_to_analyze}")
-    print("--------------------------------------------------\n")
+    all_new_qualified = []
+    attempted_names = set()
 
-    # ETAPA 2: Análise Profunda em Loop
-    if startup_names_to_analyze:
-        existing_startups = set(worksheet.col_values(1))
-        
-        for name in startup_names_to_analyze:
-            if name in existing_startups:
-                print(f"Startup '{name}' já existe na base. Pulando.")
-                continue
+    for attempt in range(1, MAX_PROSPECTION_ATTEMPTS + 1):
+        prospect_task = build_prospect_task(existing_startups.union(attempted_names), attempt)
+        prospect_crew = Crew(
+            agents=[prospector_agent],
+            tasks=[prospect_task],
+            process=Process.sequential,
+            verbose=False
+        )
+        print(f"\n[Prospecção] Executando tentativa {attempt}...")
+        prospect_result = safe_kickoff(prospect_crew, f"Prospecção {attempt}")
+        raw_names = prospect_result.raw if (prospect_result and getattr(prospect_result,'raw', None)) else ''
+        # Normaliza splits
+        raw_candidates = [n.strip() for n in raw_names.split(',') if n.strip()]
+        # Remove já existentes e já tentados
+        new_candidates = [n for n in raw_candidates if n not in existing_startups and n not in attempted_names]
+        attempted_names.update(raw_candidates)
+        if not new_candidates:
+            print("Nenhum nome novo bruto nesta tentativa.")
+            continue
+        qualify_task = build_qualify_task(', '.join(new_candidates))
+        qualify_crew = Crew(
+            agents=[qualifier_agent],
+            tasks=[qualify_task],
+            process=Process.sequential,
+            verbose=False
+        )
+        print(f"[Qualificação] Verificando {len(new_candidates)} candidatos novos...")
+        qualify_result = safe_kickoff(qualify_crew, f"Qualificação {attempt}")
+        qualified_str = qualify_result.raw if (qualify_result and getattr(qualify_result,'raw', None)) else ''
+        qualified_list = [n.strip() for n in qualified_str.split(',') if n.strip()]
+        qualified_new_unique = [n for n in qualified_list if n not in existing_startups and n not in all_new_qualified]
+        print(f"[Qualificação] Novos aprovados nesta tentativa: {qualified_new_unique}")
+        all_new_qualified.extend(qualified_new_unique)
+        if len(all_new_qualified) >= MIN_NEW_STARTUPS_REQUIRED:
+            print("Critério mínimo de novas startups atingido. Encerrando prospecção.")
+            break
 
-            print(f"\n>>> Iniciando análise profunda para: {name} <<<")
-            
-            # Cria tarefas dinâmicas
-            task_analyze_data = task_analyze_data_template
-            task_analyze_data.description = task_analyze_data.description.format(startup_name=name)
-            
-            task_analyze_market = task_analyze_market_template
-            task_analyze_market.description = task_analyze_market.description.format(startup_name=name)
+    print(f"Total final de novas startups qualificadas: {all_new_qualified}")
 
-            task_manage_database = task_manage_database_template
-            task_manage_database.description = task_manage_database.description.format(startup_name=name)
-            task_manage_database.context = [task_analyze_data, task_analyze_market]
+    # ETAPA 2: Análise Apenas das Novas
+    for name in all_new_qualified:
+        print(f"\n>>> Iniciando análise profunda para: {name} <<<")
+        task_analyze_data = build_data_task(name)
+        task_analyze_market = build_market_task(name)
+        analysis_crew = Crew(
+            agents=[data_analyst_agent, market_strategist_agent],
+            tasks=[task_analyze_data, task_analyze_market],
+            process=Process.sequential,
+            verbose=True
+        )
+        analysis_result = analysis_crew.kickoff()
+        outputs = []
+        try:
+            if analysis_result and getattr(analysis_result, 'tasks_output', None):
+                outputs = [t.raw for t in analysis_result.tasks_output if getattr(t,'raw', None)]
+            else:
+                if getattr(analysis_result, 'raw', None):
+                    outputs = [analysis_result.raw]
+        except Exception as e:
+            print(f"Falha ao coletar outputs: {e}")
+        merge_and_write(name, outputs)
+        print(f"Conclusão para '{name}'.")
 
-            # Cria Crew de Análise para esta startup
-            analysis_crew = Crew(
-                agents=[data_analyst_agent, market_strategist_agent, database_manager_agent],
-                tasks=[task_analyze_data, task_analyze_market, task_manage_database],
-                process=Process.sequential,
-                verbose=True
-            )
-            
-            analysis_result = analysis_crew.kickoff()
-            print(f"Resultado da análise para '{name}': {analysis_result.raw if analysis_result else 'Sem resultado.'}")
-            
     print("\n\n########################")
     print("## Processo finalizado!")
     print("########################")
