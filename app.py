@@ -140,6 +140,11 @@ def dashboard():
     """Página principal do dashboard"""
     return render_template('dashboard.html')
 
+@app.route('/insights')
+def insights():
+    """Página de insights com chatbot"""
+    return render_template('insights.html')
+
 @app.route('/api/startups')
 def api_startups():
     """API para buscar dados das startups"""

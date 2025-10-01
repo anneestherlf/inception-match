@@ -113,7 +113,7 @@ function setupEventListeners() {
     // Botão Chat Insights
     const chatBtn = document.querySelector('.action-btn:nth-child(3)');
     chatBtn.addEventListener('click', () => {
-        alert('Chat Insights será implementado em breve');
+        window.location.href = '/insights';
     });
 
     // Toggle Filtro Inception

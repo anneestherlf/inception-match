@@ -1,0 +1,473 @@
+:root {
+    --dark-bg: #181A20;
+    --darker-bg: #131519;
+    --panel-bg: #23272F;
+    --text-color-light: #B0B3B8;
+    --text-color-dark: #7A7F85;
+    --accent-color: #00FFB0; /* Green from the original image for accents */
+    --border-color: #333;
+    --input-bg: #3A3F47;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background-color: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+    height: 64px;
+}
+
+.header-left .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.logo-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.datetime {
+    font-size: 13px;
+    color: #ffffff;
+    font-weight: 400;
+}
+
+.notification-icon {
+    position: relative;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.notification-icon i {
+    font-size: 16px;
+    color: #ffffff;
+}
+
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    background-color: #ff4444;
+    border-radius: 50%;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.user-profile:hover {
+    background-color: #1a1a1a;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.user-profile i {
+    font-size: 10px;
+    color: #666;
+}
+
+
+
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--dark-bg);
+    color: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--darker-bg); /* Slightly darker for the top bar */
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.nvidia-logo {
+    height: 24px; /* Adjust as needed */
+    margin-right: 10px;
+}
+
+.app-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.date-time {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+}
+
+.navbar-icon-wrapper {
+    position: relative;
+    color: var(--text-color-light);
+    font-size: 1.2rem;
+}
+
+.navbar-icon-wrapper .fa-bell {
+    color: white; /* Bell icon is white in the image */
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: red;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    background-color: var(--panel-bg);
+    border-radius: 20px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.user-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.user-name {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.user-profile .fa-chevron-down {
+    font-size: 0.8rem;
+    color: var(--text-color-light);
+}
+
+
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex-grow: 1;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 80px; /* Fixed width for the collapsed sidebar */
+    background-color: var(--darker-bg);
+    padding: 20px 0;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-back {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-color-light);
+    text-decoration: none;
+    font-size: 0.7rem;
+    margin-bottom: 30px;
+    padding: 10px 0;
+}
+
+.sidebar-back i {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px; /* Space between icons */
+}
+
+.sidebar-menu li a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    color: var(--text-color-light);
+    font-size: 1.2rem;
+    text-decoration: none;
+    border-radius: 8px; /* Slightly rounded corners */
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-menu li a:hover {
+    background-color: var(--panel-bg);
+    color: white;
+}
+
+.sidebar-menu li a.active {
+    background-color: var(--panel-bg); /* Highlight for active item */
+    color: var(--accent-color); /* Green for active icon */
+    border-left: 3px solid var(--accent-color); /* Left border highlight */
+    margin-left: -3px; /* Compensate for the border */
+}
+
+/* Chat Area */
+.chat-area-container {
+    flex-grow: 1;
+    display: flex;
+}
+
+.chat-list-panel {
+    width: 280px; /* Width of the left chat list panel */
+    background-color: var(--darker-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.chat-list-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.new-chat-btn {
+    flex-grow: 1;
+    background-color: var(--panel-bg);
+    color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.new-chat-btn i {
+    color: var(--accent-color);
+}
+
+.new-chat-btn:hover {
+    background-color: #31353e;
+}
+
+.expand-chat-btn {
+    background-color: var(--panel-bg);
+    color: var(--text-color-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.expand-chat-btn:hover {
+    background-color: #31353e;
+}
+
+.search-bar {
+    width: 100%;
+}
+
+.search-input {
+    width: calc(100% - 20px); /* Adjust for padding */
+    padding: 10px;
+    background-color: var(--input-bg);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.search-input::placeholder {
+    color: var(--text-color-dark);
+}
+
+.no-chats-message {
+    text-align: center;
+    color: var(--text-color-dark);
+    font-style: italic;
+    margin-top: 20px;
+}
+
+.chat-window {
+    flex-grow: 1;
+    background-color: var(--dark-bg); /* Main chat background */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding-bottom: 70px; /* Space for the input area */
+}
+
+.chat-messages-display {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.empty-chat-message {
+    color: var(--text-color-dark);
+    font-style: italic;
+    text-align: center;
+    padding-top: 50px; /* Center it roughly */
+}
+
+
+.chat-input-area {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--darker-bg); /* Same as navbar */
+    border-top: 1px solid var(--border-color);
+    gap: 10px;
+}
+
+.chat-input-icon {
+    font-size: 1.5rem;
+    color: var(--text-color-light);
+    cursor: pointer;
+}
+
+.message-input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    background-color: var(--panel-bg);
+    border: none;
+    border-radius: 25px; /* More rounded like in the image */
+    color: white;
+    font-size: 1rem;
+}
+
+.message-input::placeholder {
+    color: var(--text-color-dark);
+}
+
+.send-message-btn {
+    background-color: var(--accent-color);
+    color: var(--dark-bg);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.send-message-btn:hover {
+    background-color: #00e09e;
+}
+
+/* Footer */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--darker-bg);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-color-dark);
+}
+
+.privacy-policy {
+    color: var(--text-color-dark);
+    text-decoration: none;
+}
+
+.privacy-policy:hover {
+    text-decoration: underline;
+}

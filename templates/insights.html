@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inception-match</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style-insights.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="{{ url_for('static', filename='images/nvidia-logo.png') }}" alt="NVIDIA Logo" class="logo-img">
+                    </div>
+                    <span class="logo-text">Inception-match</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="datetime">
+                    <span id="current-datetime">25 de Setembro, 2024 16:12</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <nav class="sidebar">
+                <a href="/" class="sidebar-back">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+            </nav>
+
+            <div class="chat-area-container">
+                <div class="chat-list-panel">
+                    <div class="chat-list-header">
+                        <button class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
+                        <button class="expand-chat-btn"><i class="fas fa-expand-alt"></i></button>
+                    </div>
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search chats..." class="search-input">
+                    </div>
+                    <div class="no-chats-message">
+                        No chats.
+                    </div>
+                </div>
+
+                <div class="chat-window">
+                    <div class="chat-messages-display">
+                        <div class="empty-chat-message">
+                            </div>
+                    </div>
+                    <div class="chat-suggestions" style="margin-bottom:16px;">
+                        <span style="display:block;margin-bottom:6px;color:#00FFB0;font-weight:500;">Sugestões:</span>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Qual a startup com maior potencial de crescimento para o ano que vem?</button>
+                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Qual startup que devo entrar em contato hoje para o programa inception?</button>
+                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Quais startups estão liderando IA no Brasil?</button>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <i class="fas fa-plus-circle chat-input-icon"></i>
+                        <input type="text" placeholder="Send a message..." class="message-input">
+                        <button class="send-message-btn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <span class="copyright">© 2025 Todos os direitos reservados.</span>
+        <a href="#" class="privacy-policy">Política de Privacidade</a>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
