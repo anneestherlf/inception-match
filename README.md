@@ -1,6 +1,6 @@
 # Inception-match Dashboard
 
-Dashboard web para visualização de dados de startups coletados pela NVIDIA, replicando exatamente o design da imagem fornecida.
+Dashboard web para visualização de dados de startups coletados pela NVIDIA.
 
 ## 🚀 Funcionalidades
 
@@ -9,7 +9,6 @@ Dashboard web para visualização de dados de startups coletados pela NVIDIA, re
 - **Estatísticas em Tempo Real**: Total de startups, setores e países principais
 - **Tabela Interativa**: Lista completa de startups com dados detalhados
 - **Filtros**: Sistema de filtros para análise de dados
-- **Responsivo**: Funciona em desktop e mobile
 
 ## 📋 Pré-requisitos
 
@@ -73,16 +72,6 @@ O dashboard consome dados da planilha Google Sheets com as seguintes colunas:
 - CAC
 - Churn Rate
 - Fontes da Análise de Mercado
-
-## 🎨 Design
-
-O dashboard replica exatamente o design da imagem fornecida:
-
-- **Tema Dark**: Fundo preto/cinza escuro
-- **Cores**: Verde (#00FF88) para acentos, branco para texto
-- **Layout**: Grid responsivo com cards e tabela
-- **Tipografia**: Inter font family
-- **Componentes**: Botões, toggles, tabelas estilizadas
 
 ## 🔧 Arquitetura
 
