@@ -156,7 +156,7 @@ def api_startups():
         formatted_startup = {
             'nome': startup.get('Nome da Startup', 'N/A'),
             'investidor': startup.get('Nome do Investidor (VC)', 'N/A'),
-            'status': startup.get('Status do financiamento', 'N/A'),
+            'status': startup.get('Status de financiamento', 'N/A'),
             'pais': startup.get('País', 'N/A'),
             'tam': startup.get('TAM', 'N/A'),
             'setor': startup.get('Setor de Atuação', 'N/A')
