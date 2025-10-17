@@ -399,6 +399,56 @@ body {
     padding-top: 50px; /* Center it roughly */
 }
 
+/* Chat message bubbles */
+.messages-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.msg {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    white-space: pre-wrap; /* preserve line breaks and wrap long text */
+    word-break: break-word;
+}
+
+.msg.user {
+    align-self: flex-end;
+    background-color: var(--panel-bg);
+    color: #fff;
+}
+
+.msg.bot {
+    align-self: flex-start;
+    background-color: rgba(255,255,255,0.03);
+    color: #fff;
+}
+
+.msg.loading {
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.bot-sources {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0 12px 6px;
+}
+
+.bot-source-link {
+    color: var(--accent-color);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.bot-source-link:hover {
+    text-decoration: underline;
+}
+
 /* Chat Suggestions */
 .chat-suggestions {
     margin-bottom: 16px;

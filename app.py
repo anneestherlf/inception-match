@@ -5,6 +5,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+import requests
+from flask import request
+import re
 
 app = Flask(__name__)
 
@@ -183,6 +186,120 @@ def api_debug():
 def api_statistics():
     """API para buscar estatísticas"""
     return jsonify(get_statistics())
+
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    """Recebe uma mensagem do frontend, consulta a Serper API e retorna uma resposta"""
+    data = request.get_json() or {}
+    message = data.get('message', '').strip()
+    if not message:
+        return jsonify({'error': 'No message provided'}), 400
+
+    serper_key = os.getenv('SERPER_API_KEY')
+    if not serper_key:
+        return jsonify({'error': 'SERPER_API_KEY not configured on server'}), 500
+
+    # Chamada à API Serper
+    try:
+        url = 'https://google.serper.dev/search'
+        headers = {
+            'X-API-KEY': serper_key,
+            'Content-Type': 'application/json'
+        }
+        payload = {'q': message}
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        resp.raise_for_status()
+        result = resp.json()
+
+
+        # Tentar extrair uma resposta direta (campo 'answer') ou montar um texto a partir dos resultados orgânicos
+        answer = None
+        if isinstance(result, dict):
+            # Primeiro, campo 'answer' (pode conter resposta direta ou snippet)
+            if 'answer' in result and result.get('answer'):
+                a = result.get('answer')
+                if isinstance(a, dict):
+                    answer = a.get('answer') or a.get('snippet') or a.get('text')
+                else:
+                    answer = str(a)
+
+            # Se não houver resposta direta, tente compor uma resposta mais completa a partir dos snippets orgânicos
+            if not answer:
+                organic = result.get('organic', [])
+                snippets = []
+                if organic and isinstance(organic, list):
+                    # colete até 3 snippets/titles para compor uma resposta maior
+                    for item in organic[:3]:
+                        s = item.get('snippet') or item.get('title') or ''
+                        if s:
+                            snippets.append(s)
+
+                # também verifique se existe algum 'knowledge' ou 'rich_snippet'
+                if not snippets and result.get('knowledge'):
+                    k = result.get('knowledge')
+                    if isinstance(k, dict):
+                        ks = k.get('snippets') or k.get('answers') or []
+                        for it in ks[:3]:
+                            if isinstance(it, dict):
+                                s = it.get('text') or it.get('snippet') or ''
+                            else:
+                                s = str(it)
+                            if s:
+                                snippets.append(s)
+
+                # junte e limpe as reticências artificiais
+                if snippets:
+                    def normalize_snippets(parts):
+                        cleaned = []
+                        seen = set()
+                        for p in parts:
+                            # remove reticências e múltiplos espaços
+                            s = re.sub(r'\.{2,}', ' ', p)
+                            s = s.replace('\n', ' ').strip()
+                            # remove leading/trailing ellipses or dashes
+                            s = re.sub(r'^[\s\-\u2026]+|[\s\-\u2026]+$', '', s)
+                            if not s:
+                                continue
+                            # simple dedupe: skip if substring already present
+                            key = s.lower()
+                            if key in seen:
+                                continue
+                            if any(key in prev for prev in seen):
+                                continue
+                            seen.add(key)
+                            # ensure ends with punctuation for nicer joining
+                            if not re.search(r'[\.\!\?]$', s):
+                                s = s.rstrip(' ,;:')
+                                s = s + '.'
+                            cleaned.append(s)
+
+                        # join with space to form continuous prose
+                        text = ' '.join(cleaned)
+                        # normalize spaces
+                        text = re.sub(r'\s{2,}', ' ', text).strip()
+                        return text
+
+                    answer = normalize_snippets(snippets)
+
+        if not answer:
+            answer = 'Desculpe, não consegui encontrar uma resposta precisa para isso.'
+
+        # Extrair fontes (links) dos resultados orgânicos
+        sources = []
+        if isinstance(result, dict):
+            organic = result.get('organic', [])
+            if organic and isinstance(organic, list):
+                for item in organic[:5]:
+                    title = item.get('title') or item.get('serpapi_title') or ''
+                    link = item.get('link') or item.get('url') or item.get('source') or ''
+                    if link:
+                        sources.append({'title': title, 'link': link})
+
+        return jsonify({'answer': answer, 'raw': result, 'sources': sources})
+
+    except requests.RequestException as e:
+        return jsonify({'error': 'Failed to contact Serper API', 'details': str(e)}), 502
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
