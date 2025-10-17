@@ -46,7 +46,7 @@ async function loadDashboardData() {
 function updateStatistics(stats) {
     // Atualizar total de startups
     document.getElementById('total-startups').textContent = stats.total_startups;
-    document.getElementById('last-update').textContent = `Última atualização ${stats.last_update}`;
+    // document.getElementById('last-update').textContent = `Última atualização ${stats.last_update}`;
 
     // Atualizar top setores
     const sectorsContainer = document.getElementById('top-sectors');

@@ -1,10 +1,10 @@
 :root {
-    --dark-bg: #181A20;
-    --darker-bg: #131519;
+    --dark-bg: #1A1A1A;
+    --darker-bg:  #0A0A0A;
     --panel-bg: #23272F;
     --text-color-light: #B0B3B8;
     --text-color-dark: #7A7F85;
-    --accent-color: #00FFB0; /* Green from the original image for accents */
+    --accent-color: #77B900; /* Green from the original image for accents */
     --border-color: #333;
     --input-bg: #3A3F47;
 }
@@ -291,6 +291,7 @@ body {
 .chat-area-container {
     flex-grow: 1;
     display: flex;
+    background-color: #0A0A0A;
 }
 
 .chat-list-panel {
@@ -398,6 +399,55 @@ body {
     padding-top: 50px; /* Center it roughly */
 }
 
+/* Chat Suggestions */
+.chat-suggestions {
+    margin-bottom: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.suggestions-title {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.suggestion-btn {
+    background: transparent;
+    color: #FFFFFF;
+    border: 1px solid rgba(119,185,0,0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 150ms ease, transform 60ms ease;
+    font-size: 0.95rem;
+}
+
+.suggestion-btn:hover {
+    background: rgba(119,185,0,0.06);
+    transform: translateY(-1px);
+}
+
+.suggestion-btn:active {
+    transform: translateY(0);
+}
+
+.suggestion-active {
+    box-shadow: 0 0 0 4px rgba(119,185,0,0.08);
+    transform: translateY(-1px);
+}
+
 
 .chat-input-area {
     position: absolute;
@@ -448,7 +498,7 @@ body {
 }
 
 .send-message-btn:hover {
-    background-color: #00e09e;
+    background-color: #6EA900; /* slightly darker green hover */
 }
 
 /* Footer */

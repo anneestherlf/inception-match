@@ -22,9 +22,9 @@
                 </div>
             </div>
             <div class="header-right">
-                <div class="datetime">
+                <!-- <div class="datetime">
                     <span id="current-datetime">25 de Setembro, 2024 16:12</span>
-                </div>
+                </div> -->
             </div>
         </header>
 
@@ -36,7 +36,7 @@
             </nav>
 
             <div class="chat-area-container">
-                <div class="chat-list-panel">
+                <!-- <div class="chat-list-panel">
                     <div class="chat-list-header">
                         <button class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
                         <button class="expand-chat-btn"><i class="fas fa-expand-alt"></i></button>
@@ -47,19 +47,19 @@
                     <div class="no-chats-message">
                         No chats.
                     </div>
-                </div>
+                </div> -->
 
                 <div class="chat-window">
                     <div class="chat-messages-display">
                         <div class="empty-chat-message">
                             </div>
                     </div>
-                    <div class="chat-suggestions" style="margin-bottom:16px;">
-                        <span style="display:block;margin-bottom:6px;color:#00FFB0;font-weight:500;">Sugestões:</span>
-                        <div style="display:flex;flex-direction:column;gap:6px;">
-                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Qual a startup com maior potencial de crescimento para o ano que vem?</button>
-                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Qual startup que devo entrar em contato hoje para o programa inception?</button>
-                            <button type="button" class="suggestion-btn" style="background:#23272F;color:#00FFB0;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;">Quais startups estão liderando IA no Brasil?</button>
+                    <div class="chat-suggestions">
+                        <span class="suggestions-title">Sugestões:</span>
+                        <div class="suggestions-list">
+                            <button type="button" class="suggestion-btn">Qual a startup com maior potencial de crescimento para o ano que vem?</button>
+                            <button type="button" class="suggestion-btn">Qual startup que devo entrar em contato hoje para o programa inception?</button>
+                            <button type="button" class="suggestion-btn">Quais startups estão liderando IA no Brasil?</button>
                         </div>
                     </div>
                     <div class="chat-input-area">
@@ -77,6 +77,28 @@
         <a href="#" class="privacy-policy">Política de Privacidade</a>
     </footer>
 
-    <script src="script.js"></script>
+    <script>
+        // Fill message input with suggestion text and focus the input when a suggestion is clicked
+        (function(){
+            document.addEventListener('DOMContentLoaded', function(){
+                const suggestions = document.querySelectorAll('.suggestion-btn');
+                const input = document.querySelector('.message-input');
+
+                if(!suggestions.length || !input) return;
+
+                suggestions.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const text = btn.textContent.trim();
+                        input.value = text;
+                        input.focus();
+
+                        // small visual feedback
+                        btn.classList.add('suggestion-active');
+                        setTimeout(() => btn.classList.remove('suggestion-active'), 250);
+                    });
+                });
+            });
+        })();
+    </script>
 </body>
 </html>
